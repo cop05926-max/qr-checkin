@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>QR Check-In</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      text-align: center;
+    }
+
+    h2 {
+      margin-bottom: 10px;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      background: #667eea;
+      color: white;
+    }
+
+    button:hover {
+      background: #5563d6;
+    }
+
+    video, canvas {
+      width: 100%;
+      border-radius: 8px;
+      margin-top: 10px;
+    }
+
+    .small {
+      font-size: 13px;
+      color: #555;
+      margin-top: 10px;
+    }
+
+    #locationText {
+      font-size: 14px;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <h2>📍 QR Check-In</h2>
+
+  <p class="small">
+    By continuing, you allow location access and camera usage.
+  </p>
+
+  <button onclick="getLocation()">Share Location</button>
+  <p id="locationText"></p>
+
+  <button onclick="startCamera()">Open Camera</button>
+  <video id="video" autoplay playsinline></video>
+
+  <button onclick="takePhoto()">Take Selfie</button>
+  <canvas id="canvas"></canvas>
+
+  <button onclick="downloadSelfie()">Download Selfie</button>
+
+  <button onclick="submitData()">Submit Check-In</button>
+</div>
+
+<script>
+let locationData = null;
+let stream = null;
+
+function getLocation() {
+  navigator.geolocation.getCurrentPosition(pos => {
+    locationData = {
+      lat: pos.coords.latitude,
+      lon: pos.coords.longitude
+    };
+    document.getElementById("locationText").innerText =
+      `Location: ${locationData.lat}, ${locationData.lon}`;
+  }, () => {
+    alert("Location permission denied");
+  });
+}
+
+function startCamera() {
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+    .then(s => {
+      stream = s;
+      document.getElementById("video").srcObject = s;
+    })
+    .catch(() => alert("Camera permission denied"));
+}
+
+function takePhoto() {
+  const video = document.getElementById("video");
+  const canvas = document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
+
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  ctx.drawImage(video, 0, 0);
+
+  if (stream) {
+    stream.getTracks().forEach(track => track.stop());
+  }
+}
+
+function downloadSelfie() {
+  const canvas = document.getElementById("canvas");
+  const link = document.createElement("a");
+  link.download = "selfie.png";
+  link.href = canvas.toDataURL("image/png");
+  link.click();
+}
+
+function submitData() {
+  if (!locationData) {
+    alert("Please share location first");
+    return;
+  }
+
+  const message =
+    `Check-In Complete\nLocation: ${locationData.lat}, ${locationData.lon}`;
+
+  const phoneNumber = "1234567890"; // change this
+  const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+
+  window.open(url, "_blank");
+}
+</script>
+
+</body>
+</html>
